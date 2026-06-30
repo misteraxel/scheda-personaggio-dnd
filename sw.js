@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dnd-scheda-v7'; 
+const CACHE_NAME = 'dnd-scheda-v8'; 
 const assets = ['index.html', 'style.css', 'data.js', 'logic.js', 'manifest.json', 'icon.png'];
 // ... resto del codice sw.js invariato
 
