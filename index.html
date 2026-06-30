@@ -3,24 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scheda D&D 5e</title>
+    <title>Scheda D&D 5e Multi-PG</title>
     <link rel="manifest" href="manifest.json">
-    <!-- Collegamento allo stile esterno -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <div>
-            <h1 id="header-nome">Caricamento...</h1>
-            <p id="header-classe">Attendere prego</p>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <!-- Menu a tendina per cambiare al volo personaggio -->
+            <select id="selettore-pg" onchange="cambiaPersonaggio(this.value)" style="background:#2d2d2d; color:white; border:1px solid #444; padding:8px; font-weight:bold; border-radius:4px; font-size:14px; max-width:180px;"></select>
+            <div>
+                <h1 id="header-nome" style="font-size:18px;">Caricamento...</h1>
+                <p id="header-classe">Attendere prego</p>
+            </div>
         </div>
-        <button class="btn-header" onclick="switchSchermata()">⚙️ Modifica / Crea</button>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-header" onclick="esportaDatiDND()">📤 Esporta</button>
+            <label class="btn-header" style="cursor:pointer; display:inline-block;">
+                📥 Importa <input type="file" id="file-import" accept=".json" onchange="importiDatiDND(event)" style="display:none;">
+            </label>
+            <button class="btn-header" style="background:#444;" onclick="switchSchermata()">⚙️ Gestisci PG</button>
+        </div>
     </header>
 
     <!-- 1. VISTA SCHERMA DI GIOCO -->
     <div id="schermata-gioco" class="dashboard">
-        <!-- Colonna Sinistra (Vitali + Caratteristiche) -->
         <div class="col-sinistra">
             <div class="row-vitali">
                 <div class="card card-pf box-vitale">
@@ -40,7 +48,6 @@
             <div class="griglia-carat" id="contenitore-caratteristiche"></div>
         </div>
 
-        <!-- Colonna Centrale (Attacchi + Note) -->
         <div class="col-destra">
             <div class="box-dadi" id="display-tiri">🎲 Clicca su un'abilità o attacco!</div>
             <div class="card" style="flex-grow: 1; overflow-y: auto;">
@@ -51,7 +58,6 @@
             </div>
         </div>
 
-        <!-- Colonna Destra (Tutte le 18 Abilità) -->
         <div class="col-destra" style="flex: 1.1;">
             <div class="card" style="height: 100%; overflow-y: auto;">
                 <div class="sezione-titolo">Abilità e Competenze</div>
@@ -62,6 +68,16 @@
 
     <!-- 2. VISTA PANNELLO DI MODIFICA (FORM) -->
     <div id="schermata-editor">
+        <!-- Scelta Azione (Modifica o Nuovo) -->
+        <div class="card" style="margin-bottom: 15px; background: #252525; display:flex; gap:20px; padding:10px;">
+            <label style="color:white; font-weight:bold; font-size:14px; cursor:pointer;">
+                <input type="radio" name="azione-pg" id="editor-modifica" checked> ✏️ Modifica Personaggio Attuale
+            </label>
+            <label style="color:#ffc107; font-weight:bold; font-size:14px; cursor:pointer;">
+                <input type="radio" name="azione-pg" id="editor-nuovo"> ➕ Crea un NUOVO Personaggio
+            </label>
+        </div>
+
         <div class="form-group">
             <label>Nome Personaggio</label>
             <input type="text" id="input-nome">
@@ -93,7 +109,7 @@
             </div>
         </div>
 
-        <label style="display:block; font-size:11px; color:#ffc107; font-weight:bold; margin-bottom:4px;">CARATTERISTICHE (Punteggi Base)</label>
+        <label style="display:block; font-size:11px; color:#ffc107; font-weight:bold; margin-bottom:4px;">CARATTERISTICHE</label>
         <div class="griglia-form-carat">
             <div class="form-group"><label>FOR</label><input type="number" id="input-for"></div>
             <div class="form-group"><label>DES</label><input type="number" id="input-des"></div>
@@ -104,12 +120,12 @@
         </div>
 
         <div class="form-group">
-            <label>Attacchi Rapidi (Formato: Nome,Bonus,Danno; Nome,Bonus,Danno)</label>
+            <label>Attacchi Rapidi (Nome,Bonus,Danno; Nome,Bonus,Danno)</label>
             <input type="text" id="input-attacchi">
         </div>
 
         <div class="form-group">
-            <label>Competenze Abilità (Scrivi separate da virgola)</label>
+            <label>Competenze Abilità (Usa * per la Maestria)</label>
             <input type="text" id="input-competenze">
         </div>
 
@@ -118,14 +134,15 @@
             <textarea id="input-note" rows="4"></textarea>
         </div>
 
-        <button class="btn-salva" onclick="salvaDatiPersonaggio()">💾 Salva nel Tablet</button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-salva" onclick="salvaDatiPersonaggio()">💾 Salva Modifiche / Nuovo</button>
+            <button class="btn-salva" style="background:#8b0000; max-width:200px;" onclick="eliminaPersonaggioCorrente()">🗑️ Elimina PG</button>
+        </div>
     </div>
 
-    <!-- Collegamento script nell'ordine corretto -->
     <script src="js/data.js"></script>
     <script src="js/logic.js"></script>
     <script>
-        // Avvio dell'app e Service Worker
         window.onload = function() {
             inizializzaApp();
         };
