@@ -1,0 +1,15 @@
+{
+  "name": "Scheda D&D Minimal",
+  "short_name": "D&D Scheda",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#8b0000",
+  "icons": [
+    {
+      "src": "icona.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
