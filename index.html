@@ -128,7 +128,17 @@
             <label>Competenze Abilità (Usa * per la Maestria)</label>
             <input type="text" id="input-competenze">
         </div>
+		
+		<div class="form-group">
+            <label>Competenze Abilità (Usa * per la Maestria)</label>
+            <input type="text" id="input-competenze">
+        </div>
 
+        <div class="form-group">
+            <label>Competenze Tiri Salvezza (Scrivi le tre lettere separate da virgola. Es: FOR, COS)</label>
+            <input type="text" id="input-ts" placeholder="FOR, DES, COS, INT, SAG, CAR">
+        </div>
+		
         <div class="form-group">
             <label>Note e Privilegi</label>
             <textarea id="input-note" rows="4"></textarea>
@@ -140,15 +150,29 @@
         </div>
     </div>
 
+    <!-- In fondo a index.html, sostituisci da qui in poi -->
     <script src="js/data.js"></script>
     <script src="js/logic.js"></script>
     <script>
-        window.onload = function() {
-            inizializzaApp();
-        };
+        // Avvio sicuro della scheda
+        try {
+            if (typeof inizializzaApp === 'function') {
+                inizializzaApp();
+            } else {
+                console.error("La funzione inizializzaApp non è stata trovata. Controlla il file logic.js");
+            }
+        } catch(e) {
+            console.error("Errore durante l'inizializzazione:", e);
+        }
+
+        // Registrazione Service Worker per l'uso offline
         if ('serviceWorker' in navigator) { 
-            navigator.serviceWorker.register('sw.js'); 
+            navigator.serviceWorker.register('sw.js')
+            .then(function() { console.log("Service Worker Registrato"); })
+            .catch(function(err) { console.error("Errore SW:", err); });
         }
     </script>
+</body>
+</html>
 </body>
 </html>

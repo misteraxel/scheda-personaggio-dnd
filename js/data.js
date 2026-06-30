@@ -11,7 +11,8 @@ const personaggioPredefinito = {
     percezionePassiva: 12,
     bonusCompetenza: 2,
     caratteristiche: { 'FOR': 16, 'DES': 14, 'COS': 15, 'INT': 9, 'SAG': 11, 'CAR': 12 },
-    attacchi: [
+    tiriSalvezzaScritti: 'FOR, COS',
+	attacchi: [
         { nome: 'Spadone a Due Mani', bonus: 5, danno: '2d6+3' },
         { nome: 'Balestra Leggera', bonus: 4, danno: '1d8+2' }
     ],

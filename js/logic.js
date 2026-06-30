@@ -39,7 +39,6 @@ function tiraD20(etichetta, bonus) {
 function renderizzaScheda() {
     if (!pg) return;
 
-    // Aggiorna il menu a tendina dei personaggi
     aggiornaSelettorePersonaggi();
 
     // Dati Generali
@@ -51,14 +50,28 @@ function renderizzaScheda() {
     document.getElementById('valore-iniz').innerText = (pg.iniziativa >= 0 ? "+" : "") + pg.iniziativa;
     document.getElementById('valore-perc').innerText = pg.percezionePassiva;
 
-    // Generazione Caratteristiche
+    // Generazione Caratteristiche (CON TIRI SALVEZZA INTEGRATI)
     let htmlCarat = '';
+    let listaTS = (pg.tiriSalvezzaScritti || '').split(',').map(t => t.trim().toUpperCase());
+
     for (let [chiave, valore] of Object.entries(pg.caratteristiche)) {
         let mod = calcolaModificatore(valore);
-        htmlCarat += `<div class="box-carat">
+        
+        // Calcolo del Tiro Salvezza
+        let haCompetenzaTS = listaTS.includes(chiave);
+        let bonusTS = mod + (haCompetenzaTS ? pg.bonusCompetenza : 0);
+        let simboloTS = haCompetenzaTS ? '●' : '○';
+        let coloreTS = haCompetenzaTS ? '#ffc107' : '#888';
+
+        htmlCarat += `
+        <div class="box-carat">
             <div class="nome-carat">${chiave}</div>
             <div class="mod-carat">${mod >= 0 ? "+" : ""}${mod}</div>
             <div class="base-carat">Base: ${valore}</div>
+            
+            <div class="tiro-salvezza-box" onclick="event.stopPropagation(); tiraD20('TS ${chiave}', ${bonusTS})" style="margin-top:8px; padding-top:5px; border-top:1px solid #333; font-size:11px; cursor:pointer; color:${coloreTS};">
+                <span style="margin-right:2px;">${simboloTS}</span> TS: <strong>${bonusTS >= 0 ? "+" : ""}${bonusTS}</strong> 🎲
+            </div>
         </div>`;
     }
     document.getElementById('contenitore-caratteristiche').innerHTML = htmlCarat;
@@ -146,6 +159,7 @@ function salvaDatiPersonaggio() {
         },
         attacchi: arrayAttacchi,
         competenzeScritte: document.getElementById('input-competenze').value,
+        tiriSalvezzaScritti: document.getElementById('input-ts').value, 
         note: document.getElementById('input-note').value
     };
 
@@ -153,7 +167,7 @@ function salvaDatiPersonaggio() {
         listaPersonaggi.push(nuovoPg);
         indiceAttuale = listaPersonaggi.length - 1;
     } else {
-        listaPersonaggi[indiceAttuale] = nuovoPg;
+        listaPersonaggi[indiceAttuale] = nuovoPg; // <--- Corretto da nuevoPg a nuovoPg
     }
 
     pg = listaPersonaggi[indiceAttuale];
@@ -181,6 +195,7 @@ function popolaCampiEditor() {
     let testoAttacchi = pg.attacchi.map(a => `${a.nome},${a.bonus},${a.danno}`).join('; ');
     document.getElementById('input-attacchi').value = testoAttacchi;
     document.getElementById('input-competenze').value = pg.competenzeScritte;
+    document.getElementById('input-ts').value = pg.tiriSalvezzaScritti || ''; 
     document.getElementById('input-note').value = pg.note;
     
     document.getElementById('editor-modifica').checked = true;
@@ -188,6 +203,7 @@ function popolaCampiEditor() {
 
 function aggiornaSelettorePersonaggi() {
     let select = document.getElementById('selettore-pg');
+    if (!select) return;
     select.innerHTML = '';
     listaPersonaggi.forEach((p, index) => {
         let opt = document.createElement('option');
@@ -239,7 +255,7 @@ function esportaDatiDND() {
     URL.revokeObjectURL(url);
 }
 
-function importaDatiDND(event) {
+function importiDatiDND(event) { 
     let file = event.target.files[0];
     if (!file) return;
 
@@ -250,7 +266,7 @@ function importaDatiDND(event) {
             if (Array.isArray(datiImportati)) {
                 listaPersonaggi = datiImportati;
             } else {
-                listaPersonaggi = [datiImportati]; // Supporta anche vecchi salvataggi singoli
+                listaPersonaggi = [datiImportati];
             }
             indiceAttuale = 0;
             pg = listaPersonaggi[indiceAttuale];
@@ -267,8 +283,6 @@ function importaDatiDND(event) {
 function inizializzaApp() {
     let datiSalvati = localStorage.getItem('dnd_lista_personaggi');
     let indiceSalvato = localStorage.getItem('dnd_indice_attuale');
-    
-    // Supporto per la transizione dal vecchio sistema a personaggio singolo
     let vecchioPgSingolo = localStorage.getItem('dnd_pg_data');
 
     if (datiSalvati) {
