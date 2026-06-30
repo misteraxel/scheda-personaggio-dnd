@@ -1,5 +1,7 @@
 // logic.js
 
+let listaPersonaggi = [];
+let indiceAttuale = 0;
 let pg = null;
 
 function calcolaModificatore(punteggio) {
@@ -25,7 +27,7 @@ function modificaPF(valore) {
     if (pg.pfAttuali < 0) pg.pfAttuali = 0;
     if (pg.pfAttuali > pg.pfMassimi) pg.pfAttuali = pg.pfMassimi;
     document.getElementById('pf-attuali').innerText = pg.pfAttuali;
-    localStorage.setItem('dnd_pg_data', JSON.stringify(pg));
+    salvaNelStorage();
 }
 
 function tiraD20(etichetta, bonus) {
@@ -36,6 +38,9 @@ function tiraD20(etichetta, bonus) {
 
 function renderizzaScheda() {
     if (!pg) return;
+
+    // Aggiorna il menu a tendina dei personaggi
+    aggiornaSelettorePersonaggi();
 
     // Dati Generali
     document.getElementById('header-nome').innerText = pg.nome;
@@ -58,9 +63,21 @@ function renderizzaScheda() {
     }
     document.getElementById('contenitore-caratteristiche').innerHTML = htmlCarat;
 
-    // Generazione 18 Abilità dinamiche (Con supporto Competenza e Maestria)
+    // Generazione Attacchi
+    let htmlAttacchi = '';
+    pg.attacchi.forEach(a => {
+        htmlAttacchi += `<li class="elemento-cliccabile" onclick="tiraD20('${a.nome}', ${a.bonus})">
+            <div>
+                <div class="nome">${a.nome}</div>
+                <div class="sottotitolo">+${a.bonus} a colpire | Danno: ${a.danno}</div>
+            </div>
+            <div style="color:#ffc107; font-size:12px; font-weight:bold;">TIRA 🎲</div>
+        </li>`;
+    });
+    document.getElementById('contenitore-attacchi').innerHTML = htmlAttacchi;
+
+    // Generazione 18 Abilità dinamiche
     let htmlCompetenze = '';
-    // Creiamo la lista delle competenze scritte dall'utente, tutto in minuscolo
     let listaCompetenzePG = pg.competenzeScritte.split(',').map(c => c.trim().toLowerCase());
 
     for (let [nomeAbilita, caratAsso] of Object.entries(MAPPA_ABILITA)) {
@@ -68,8 +85,6 @@ function renderizzaScheda() {
         let modBase = calcolaModificatore(punteggioCarat);
         
         let nomeMinuscolo = nomeAbilita.toLowerCase();
-        
-        // Controlla se l'utente ha scritto l'abilità normale o con l'asterisco (Maestria)
         let haCompetenza = listaCompetenzePG.includes(nomeMinuscolo);
         let haMaestria = listaCompetenzePG.includes(nomeMinuscolo + '*');
         
@@ -78,12 +93,12 @@ function renderizzaScheda() {
         let stileColore = 'color: #888;';
 
         if (haMaestria) {
-            bonusTotale += (pg.bonusCompetenza * 2); // Raddoppia il bonus!
-            simbolo = '★'; // Stella per la Maestria
+            bonusTotale += (pg.bonusCompetenza * 2);
+            simbolo = '★';
             stileColore = 'color: #ffc107; font-weight: bold;';
         } else if (haCompetenza) {
-            bonusTotale += pg.bonusCompetenza; // Bonus normale
-            simbolo = '●'; // Pallino per la Competenza
+            bonusTotale += pg.bonusCompetenza;
+            simbolo = '●';
             stileColore = 'color: #ffc107;';
         }
 
@@ -97,7 +112,6 @@ function renderizzaScheda() {
     }
     document.getElementById('contenitore-competenze').innerHTML = htmlCompetenze;
 
-    // Note
     document.getElementById('contenitore-note').innerText = pg.note;
 }
 
@@ -113,7 +127,7 @@ function salvaDatiPersonaggio() {
         });
     }
 
-    pg = {
+    let nuovoPg = {
         nome: document.getElementById('input-nome').value || 'Senza Nome',
         classeLivello: document.getElementById('input-classe').value || 'Nessuna Classe',
         pfMassimi: parseInt(document.getElementById('input-pf').value) || 10,
@@ -135,7 +149,15 @@ function salvaDatiPersonaggio() {
         note: document.getElementById('input-note').value
     };
 
-    localStorage.setItem('dnd_pg_data', JSON.stringify(pg));
+    if (document.getElementById('editor-nuovo').checked || listaPersonaggi.length === 0) {
+        listaPersonaggi.push(nuovoPg);
+        indiceAttuale = listaPersonaggi.length - 1;
+    } else {
+        listaPersonaggi[indiceAttuale] = nuovoPg;
+    }
+
+    pg = listaPersonaggi[indiceAttuale];
+    salvaNelStorage();
     renderizzaScheda();
     switchSchermata();
 }
@@ -160,17 +182,110 @@ function popolaCampiEditor() {
     document.getElementById('input-attacchi').value = testoAttacchi;
     document.getElementById('input-competenze').value = pg.competenzeScritte;
     document.getElementById('input-note').value = pg.note;
+    
+    document.getElementById('editor-modifica').checked = true;
+}
+
+function aggiornaSelettorePersonaggi() {
+    let select = document.getElementById('selettore-pg');
+    select.innerHTML = '';
+    listaPersonaggi.forEach((p, index) => {
+        let opt = document.createElement('option');
+        opt.value = index;
+        opt.innerText = p.nome;
+        if (index === indiceAttuale) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+function cambiaPersonaggio(index) {
+    indiceAttuale = parseInt(index);
+    pg = listaPersonaggi[indiceAttuale];
+    localStorage.setItem('dnd_indice_attuale', indiceAttuale);
+    renderizzaScheda();
+}
+
+function eliminaPersonaggioCorrente() {
+    if (listaPersonaggi.length <= 1) {
+        alert("Non puoi eliminare l'ultimo personaggio rimasto! Creane un altro prima.");
+        return;
+    }
+    if (confirm(`Sei sicuro di voler eliminare definitivamente ${pg.nome}?`)) {
+        listaPersonaggi.splice(indiceAttuale, 1);
+        indiceAttuale = 0;
+        pg = listaPersonaggi[indiceAttuale];
+        salvaNelStorage();
+        renderizzaScheda();
+    }
+}
+
+function salvaNelStorage() {
+    localStorage.setItem('dnd_lista_personaggi', JSON.stringify(listaPersonaggi));
+    localStorage.setItem('dnd_indice_attuale', indiceAttuale);
+}
+
+// === FUNZIONI ESPORTA / IMPORTA ===
+function esportaDatiDND() {
+    let datiDaScaricare = JSON.stringify(listaPersonaggi, null, 2);
+    let blob = new Blob([datiDaScaricare], { type: "application/json" });
+    let url = URL.createObjectURL(blob);
+    
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_personaggi_dnd.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importaDatiDND(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let datiImportati = JSON.parse(e.target.result);
+            if (Array.isArray(datiImportati)) {
+                listaPersonaggi = datiImportati;
+            } else {
+                listaPersonaggi = [datiImportati]; // Supporta anche vecchi salvataggi singoli
+            }
+            indiceAttuale = 0;
+            pg = listaPersonaggi[indiceAttuale];
+            salvaNelStorage();
+            renderizzaScheda();
+            alert("Personaggi importati con successo!");
+        } catch (errore) {
+            alert("Errore nel caricamento del file. Assicurati che sia un file .json valido.");
+        }
+    };
+    reader.readAsText(file);
 }
 
 function inizializzaApp() {
-    let datiSalvati = localStorage.getItem('dnd_pg_data');
+    let datiSalvati = localStorage.getItem('dnd_lista_personaggi');
+    let indiceSalvato = localStorage.getItem('dnd_indice_attuale');
+    
+    // Supporto per la transizione dal vecchio sistema a personaggio singolo
+    let vecchioPgSingolo = localStorage.getItem('dnd_pg_data');
+
     if (datiSalvati) {
-        pg = JSON.parse(datiSalvati);
+        listaPersonaggi = JSON.parse(datiSalvati);
+        indiceAttuale = indiceSalvato ? parseInt(indiceSalvato) : 0;
+    } else if (vecchioPgSingolo) {
+        listaPersonaggi = [JSON.parse(vecchioPgSingolo)];
+        indiceAttuale = 0;
     } else {
-        pg = personaggioPredefinito;
-        localStorage.setItem('dnd_pg_data', JSON.stringify(pg));
+        listaPersonaggi = [personaggioPredefinito];
+        indiceAttuale = 0;
     }
+    
+    pg = listaPersonaggi[indiceAttuale];
+    salvaNelStorage();
     renderizzaScheda();
+    
     document.getElementById('schermata-gioco').style.display = 'flex';
     document.getElementById('schermata-editor').style.display = 'none';
 }
